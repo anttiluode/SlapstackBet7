@@ -1,0 +1,1288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Slapstack Playroom — objects you can grab</title>
+<style>
+:root {
+  --chassis: #1d222e;
+  --panel: #262c3b;
+  --panel-edge: #333b4f;
+  --well: #10131b;
+  --ink: #e3e7f0;
+  --muted: #8d96ab;
+  --phosphor: #ffb454;
+  --obj0: #ff6b5e;
+  --obj1: #5ec8ff;
+  --outlier: #78808f;
+  --entropy: #c86bff;
+  --go: #7fd98a;
+  --mono: ui-monospace, "SF Mono", "Cascadia Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  --cond: "Bahnschrift", "Arial Narrow", "Helvetica Neue Condensed", "Roboto Condensed", sans-serif;
+}
+* { box-sizing: border-box; margin: 0; }
+html, body { height: 100%; }
+body {
+  background: var(--chassis);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+
+/* ---------- header ---------- */
+header {
+  display: flex; align-items: baseline; gap: 16px;
+  padding: 12px 18px 10px;
+  border-bottom: 1px solid var(--panel-edge);
+  flex-wrap: wrap;
+}
+header h1 {
+  font-family: var(--cond);
+  font-size: 21px; letter-spacing: 2.5px; font-weight: 700;
+  color: var(--ink);
+}
+header h1 em { color: var(--phosphor); font-style: normal; }
+header .claim { color: var(--muted); font-size: 12px; }
+#state-lamp {
+  margin-left: auto;
+  font-size: 11px; letter-spacing: 1.5px;
+  padding: 3px 10px; border-radius: 3px;
+  border: 1px solid var(--panel-edge);
+  color: var(--muted);
+}
+#state-lamp.soup   { color: var(--outlier); border-color: var(--outlier); }
+#state-lamp.binding{ color: var(--entropy); border-color: var(--entropy); }
+#state-lamp.bound  { color: var(--go); border-color: var(--go); }
+
+/* ---------- layout ---------- */
+main {
+  flex: 1; display: flex; gap: 14px;
+  padding: 14px 18px; min-height: 0;
+}
+#stage-wrap {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  min-width: 0;
+}
+#stage {
+  position: relative;
+  background: var(--well);
+  border: 1px solid var(--panel-edge);
+  border-radius: 6px;
+  box-shadow: inset 0 0 60px rgba(0,0,0,.55);
+}
+#stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 6px; }
+#scene-canvas { image-rendering: auto; }
+#overlay-canvas { cursor: grab; }
+#overlay-canvas.dragging { cursor: grabbing; }
+#stage .hint {
+  position: absolute; bottom: 8px; left: 0; right: 0;
+  text-align: center; color: var(--muted); font-size: 11px;
+  pointer-events: none; text-shadow: 0 1px 3px #000;
+}
+
+aside {
+  width: 322px; flex-shrink: 0;
+  display: flex; flex-direction: column; gap: 10px;
+  overflow-y: auto; padding-right: 2px;
+}
+.card {
+  background: var(--panel);
+  border: 1px solid var(--panel-edge);
+  border-radius: 6px;
+  padding: 11px 12px;
+}
+.card h2 {
+  font-family: var(--cond);
+  font-size: 12px; letter-spacing: 2px; font-weight: 700;
+  color: var(--muted); margin-bottom: 9px;
+}
+button {
+  font-family: var(--mono); font-size: 12px;
+  background: var(--well); color: var(--ink);
+  border: 1px solid var(--panel-edge); border-radius: 4px;
+  padding: 7px 12px; cursor: pointer;
+}
+button:hover { border-color: var(--phosphor); color: var(--phosphor); }
+button:focus-visible { outline: 2px solid var(--phosphor); outline-offset: 1px; }
+button:disabled { opacity: .35; cursor: default; }
+button:disabled:hover { border-color: var(--panel-edge); color: var(--ink); }
+button.primary { border-color: var(--phosphor); color: var(--phosphor); }
+.row { display: flex; gap: 8px; align-items: center; }
+.row + .row { margin-top: 8px; }
+.readout { color: var(--phosphor); }
+.dim { color: var(--muted); }
+.spacer { flex: 1; }
+
+/* pipeline meter */
+#bind-meter { height: 4px; background: var(--well); border-radius: 2px; overflow: hidden; margin-top: 9px; }
+#bind-meter > div { height: 100%; width: 0%; background: var(--entropy); transition: width .05s linear; }
+#metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; margin-top: 9px; font-size: 12px; }
+
+/* objects */
+.obj { border-top: 1px solid var(--panel-edge); padding: 8px 0; }
+.obj:first-of-type { border-top: 0; }
+.obj .name { display: flex; align-items: center; gap: 8px; }
+.swatch { width: 10px; height: 10px; border-radius: 2px; }
+.obj .pose { color: var(--muted); font-size: 11px; margin: 5px 0 7px; min-height: 14px; }
+.belief-bar { flex: 1; height: 5px; background: var(--well); border-radius: 3px; overflow: hidden; }
+.belief-bar > div { height: 100%; background: var(--go); }
+.obj .ctl { display: flex; gap: 5px; margin-top: 7px; }
+.obj .ctl button { padding: 4px 8px; font-size: 11px; }
+
+/* toggles */
+label.tog { display: flex; gap: 8px; align-items: center; cursor: pointer; padding: 3px 0; }
+label.tog input { accent-color: var(--phosphor); }
+input[type=range] { flex: 1; accent-color: var(--phosphor); }
+
+/* prompt */
+#prompt-row { display: flex; gap: 7px; }
+#prompt {
+  flex: 1; font-family: var(--mono); font-size: 12px;
+  background: var(--well); color: var(--ink);
+  border: 1px solid var(--panel-edge); border-radius: 4px;
+  padding: 7px 9px;
+}
+#prompt:focus-visible { outline: 2px solid var(--phosphor); border-color: transparent; }
+#prompt-log { color: var(--muted); font-size: 11px; margin-top: 7px; min-height: 14px; white-space: pre-wrap; }
+
+/* ledger */
+#ledger p { font-size: 11px; line-height: 1.55; color: var(--muted); margin-bottom: 7px; }
+#ledger b { color: var(--go); font-weight: 400; }
+#ledger s { color: var(--outlier); text-decoration: none; }
+#ledger .no { color: var(--entropy); }
+details summary { cursor: pointer; font-family: var(--cond); font-size: 12px; letter-spacing: 2px; color: var(--muted); }
+details[open] summary { margin-bottom: 8px; }
+
+@media (max-width: 860px) {
+  main { flex-direction: column; overflow-y: auto; }
+  body { overflow: auto; }
+  aside { width: 100%; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>SLAPSTACK <em>PLAYROOM</em></h1>
+  <span class="claim">every entity on this screen is a posterior — scramble it, bind it, then grab it</span>
+  <span id="state-lamp" class="soup">ATOM SOUP</span>
+</header>
+
+<main>
+  <div id="stage-wrap">
+    <div id="stage">
+      <canvas id="scene-canvas"></canvas>
+      <canvas id="overlay-canvas"></canvas>
+      <div class="hint">drag an object &middot; wheel = rotate &middot; shift+wheel = scale &middot; you can only grab what is believed</div>
+    </div>
+  </div>
+
+  <aside>
+    <div class="card">
+      <h2>PIPELINE</h2>
+      <div class="row">
+        <button id="btn-scramble">Scramble</button>
+        <button id="btn-bind" class="primary">Bind</button>
+        <span class="spacer"></span>
+        <span class="dim">noise</span>
+        <input type="range" id="noise" min="0" max="10" value="1" style="width:70px" aria-label="observation noise">
+      </div>
+      <div id="bind-meter"><div></div></div>
+      <div id="metrics">
+        <span class="dim">binding vs truth</span><span class="readout" id="m-acc">—</span>
+        <span class="dim">mean atom entropy</span><span class="readout" id="m-ent">—</span>
+        <span class="dim">BP iterations</span><span class="readout" id="m-it">—</span>
+        <span class="dim">atoms in scene</span><span class="readout" id="m-n">—</span>
+      </div>
+    </div>
+
+    <div class="card" id="objects-card">
+      <h2>BELIEVED OBJECTS</h2>
+      <!-- object rows injected -->
+    </div>
+
+    <div class="card">
+      <h2>OVERLAYS</h2>
+      <label class="tog"><input type="checkbox" id="ov-atoms" checked> atoms, colored by belief</label>
+      <label class="tog"><input type="checkbox" id="ov-own"> ownership tint</label>
+      <label class="tog"><input type="checkbox" id="ov-ent"> entropy border glow</label>
+      <label class="tog"><input type="checkbox" id="ov-pose" checked> pose belief (crosshair + covariance)</label>
+    </div>
+
+    <div class="card">
+      <h2>PROMPT AS INTERVENTION</h2>
+      <div id="prompt-row">
+        <input id="prompt" placeholder='e.g. "move the tractor up left, rotate star 40"'>
+        <button id="btn-prompt">Do</button>
+      </div>
+      <div id="prompt-log">Commands are parsed into pose clamps; BP re-settles the rest. Free-form language uses Claude when this page runs inside claude.ai, otherwise a local grammar.</div>
+    </div>
+
+    <div class="card" id="ledger">
+      <details>
+        <summary>HONEST LEDGER</summary>
+        <p><b>Shown here, verified:</b> exact Sim(2) drag (transform matches Python to 2e-16); binding by inference, accuracy scored against ground truth live; borders as belief fields (entropy rises with the noise slider); permanence — occlude an object and its atoms honestly revert toward the prior while the pose belief coasts as a widening ellipse; intervention as conditioning — a drag is a pose clamp, everything else re-equilibrates.</p>
+        <p><span class="no">Not shown here:</span> text&rarr;appearance ("make it dusk") needs the SDS oracle on a GPU — that is bet6d, shipped separately. Real-photo encoding (scene&rarr;atoms) is still an open ledger item; these objects are Slapstack's own reconstructions of a drawn tractor and star, 93 + 89 atoms with whatever signature collisions the optimizer left in.</p>
+      </details>
+    </div>
+  </aside>
+</main>
+
+<script>
+/* Slapstack Playroom core — faithful JS port of SlapstackBet6 math.
+   FIELDS: [x, y, theta, su, sv, f, phase, r, g, b]
+   Verified against bet6_open.py / bet6_bp_binding.py / bet6_multimodal.py
+   by tests_node.js before being embedded in the playroom. */
+"use strict";
+
+const TAU = Math.PI * 2;
+
+function wrapPi(d) {
+  return ((d + Math.PI) % TAU + TAU) % TAU - Math.PI;
+}
+
+function rotApply(rho, x, y) {
+  const c = Math.cos(rho), s = Math.sin(rho);
+  return [c * x - s * y, s * x + c * y];
+}
+
+/* Exact Sim(2) action on atom parameters (the Bet 5 algebra):
+   xy -> s R xy + t, theta -> theta + rho, sigma -> s sigma, f -> f/s.
+   Envelope-relative phase and color are INVARIANT. */
+function transformAtoms(atoms, xi) {
+  const [tx, ty, rho, lam] = xi;
+  const s = Math.exp(lam);
+  const out = new Array(atoms.length);
+  for (let i = 0; i < atoms.length; i++) {
+    const a = atoms[i];
+    const [rx, ry] = rotApply(rho, a[0], a[1]);
+    out[i] = [
+      s * rx + tx, s * ry + ty,
+      a[2] + rho,
+      a[3] * s, a[4] * s,
+      a[5] / s,
+      a[6],
+      a[7], a[8], a[9],
+    ];
+  }
+  return out;
+}
+
+/* Sim(2)-invariant intrinsic signature: identity lives here. */
+function signature(atoms) {
+  return atoms.map(a => [
+    Math.log(a[3] * a[5]),
+    Math.log(a[3] / a[4]),
+    Math.cos(a[6]), Math.sin(a[6]),
+    a[7], a[8], a[9],
+  ]);
+}
+
+/* Two pose-vote hypotheses per correspondence (pi-ambiguity fix):
+   H0: rho = d_theta,      phi_obs ==  phi_tmpl
+   H1: rho = d_theta + pi, phi_obs == -phi_tmpl  */
+function poseVotes2pi(obs, tmpl, sigPhase = 0.35) {
+  const s = Math.pow((obs[3] / tmpl[3]) * (obs[4] / tmpl[4]) * (tmpl[5] / obs[5]), 1 / 3);
+  const dTheta = obs[2] - tmpl[2];
+  const out = [];
+  for (let H = 0; H < 2; H++) {
+    const rho = wrapPi(dTheta + H * Math.PI);
+    const phiExp = H === 0 ? tmpl[6] : -tmpl[6];
+    const dphi = wrapPi(obs[6] - phiExp);
+    const pc = -0.5 * dphi * dphi / (sigPhase * sigPhase);
+    const [rx, ry] = rotApply(rho, tmpl[0], tmpl[1]);
+    out.push([[obs[0] - s * rx, obs[1] - s * ry, rho, Math.log(s)], pc]);
+  }
+  return out;
+}
+
+/* ------- small dense linear algebra on 4x4 (row-major flat arrays) ------- */
+function mat4Inv(m) {
+  // Gauss-Jordan, fine for well-conditioned SPD 4x4s here.
+  const a = m.map(r => r.slice());
+  const inv = [[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]];
+  for (let col = 0; col < 4; col++) {
+    let piv = col;
+    for (let r = col + 1; r < 4; r++)
+      if (Math.abs(a[r][col]) > Math.abs(a[piv][col])) piv = r;
+    [a[col], a[piv]] = [a[piv], a[col]];
+    [inv[col], inv[piv]] = [inv[piv], inv[col]];
+    const d = a[col][col];
+    for (let j = 0; j < 4; j++) { a[col][j] /= d; inv[col][j] /= d; }
+    for (let r = 0; r < 4; r++) {
+      if (r === col) continue;
+      const f = a[r][col];
+      for (let j = 0; j < 4; j++) { a[r][j] -= f * a[col][j]; inv[r][j] -= f * inv[col][j]; }
+    }
+  }
+  return inv;
+}
+function mat4Det(m) {
+  const a = m.map(r => r.slice());
+  let det = 1;
+  for (let col = 0; col < 4; col++) {
+    let piv = col;
+    for (let r = col + 1; r < 4; r++)
+      if (Math.abs(a[r][col]) > Math.abs(a[piv][col])) piv = r;
+    if (piv !== col) { [a[col], a[piv]] = [a[piv], a[col]]; det = -det; }
+    det *= a[col][col];
+    if (a[col][col] === 0) return 0;
+    for (let r = col + 1; r < 4; r++) {
+      const f = a[r][col] / a[col][col];
+      for (let j = col; j < 4; j++) a[r][j] -= f * a[col][j];
+    }
+  }
+  return det;
+}
+function mat4Vec(m, v) {
+  return [0,1,2,3].map(i => m[i][0]*v[0]+m[i][1]*v[1]+m[i][2]*v[2]+m[i][3]*v[3]);
+}
+function matAdd(A, B, wB = 1) {
+  return A.map((row, i) => row.map((x, j) => x + wB * B[i][j]));
+}
+
+/* Greedy mode-seeking init (angle-aware), port of _density_peaks. */
+function densityPeaks(votes, weights, M, radius = 0.45) {
+  const scale = [0.15, 0.15, 0.30, 0.20];
+  const n = votes.length;
+  const dens = new Float64Array(n);
+  for (let i = 0; i < n; i++) {
+    let acc = 0;
+    for (let k = 0; k < n; k++) {
+      const d0 = (votes[k][0] - votes[i][0]) / scale[0];
+      const d1 = (votes[k][1] - votes[i][1]) / scale[1];
+      const d2 = wrapPi(votes[k][2] - votes[i][2]) / scale[2];
+      const d3 = (votes[k][3] - votes[i][3]) / scale[3];
+      acc += weights[k] * Math.exp(-0.5 * (d0*d0 + d1*d1 + d2*d2 + d3*d3));
+    }
+    dens[i] = acc;
+  }
+  const peaks = [];
+  const alive = new Uint8Array(n).fill(1);
+  for (let m = 0; m < M; m++) {
+    let best = -1, bestD = -Infinity;
+    for (let i = 0; i < n; i++)
+      if (alive[i] && dens[i] > bestD) { bestD = dens[i]; best = i; }
+    if (best < 0) break;
+    peaks.push(votes[best].slice());
+    for (let i = 0; i < n; i++) {
+      const dxy = Math.hypot(votes[i][0] - votes[best][0], votes[i][1] - votes[best][1]);
+      const dr = Math.abs(wrapPi(votes[i][2] - votes[best][2]));
+      if (dxy + dr <= radius) alive[i] = 0;
+    }
+  }
+  return peaks;
+}
+
+/* Loopy BP binding of obs atoms to K templates at unknown poses.
+   Port of bet6_open.bp_bind: candidates carry both pi-hypotheses,
+   cavity messages, damping, branch-aligned rotation fusion.
+   Options: clampPose — array of length K; if clampPose[k] is a pose xi,
+   object k's pose is held fixed (conditioning-as-intervention) and only
+   the assignment beliefs re-equilibrate around it. */
+function bpBind(templates, obs, opts = {}) {
+  const iters = opts.iters ?? 40;
+  const damping = opts.damping ?? 0.5;
+  const cavity = opts.cavity ?? true;
+  const sigVar = opts.sigVar ?? 0.08;
+  const outLL = opts.outLL ?? -14.0;
+  const clampPose = opts.clampPose ?? null;
+  const hiddenMask = opts.hiddenMask ?? null;  // per-atom: true = no evidence
+  const onIter = opts.onIter ?? null;
+
+  const K = templates.length;
+  const sigT = templates.map(signature);
+  const sigO = signature(obs);
+  const N = obs.length;
+
+  const Vdiag = [0.03 * 0.03, 0.03 * 0.03, 0.05 * 0.05, 0.05 * 0.05];
+  const Vinv = [[1/Vdiag[0],0,0,0],[0,1/Vdiag[1],0,0],[0,0,1/Vdiag[2],0],[0,0,0,1/Vdiag[3]]];
+  const Vmat = [[Vdiag[0],0,0,0],[0,Vdiag[1],0,0],[0,0,Vdiag[2],0],[0,0,0,Vdiag[3]]];
+  const P0inv = [[1e-2,0,0,0],[0,1e-2,0,0],[0,0,1e-2,0],[0,0,0,1e-2]];
+
+  // ---- candidate generation: 3 signature-nearest per template, 2 hypotheses
+  const cands = [], votes = [], base = [];
+  for (let i = 0; i < N; i++) {
+    const c = [], v = [], b = [];
+    if (!(hiddenMask && hiddenMask[i])) {
+      for (let k = 0; k < K; k++) {
+        const d2 = sigT[k].map(st => {
+          let acc = 0;
+          for (let q = 0; q < 7; q++) { const d = st[q] - sigO[i][q]; acc += d * d; }
+          return acc;
+        });
+        const order = d2.map((d, j) => [d, j]).sort((p, q) => p[0] - q[0]).slice(0, 3);
+        for (const [dj, j] of order) {
+          for (const [xi, pc] of poseVotes2pi(obs[i], templates[k][j])) {
+            c.push([k, j]); v.push(xi); b.push(-0.5 * dj / sigVar + pc);
+          }
+        }
+      }
+    }
+    cands.push(c); votes.push(v); base.push(b);
+  }
+
+  // ---- beliefs seeded from the identity+phase channel
+  let B = [];
+  for (let i = 0; i < N; i++) {
+    const ll = base[i].concat([outLL]);
+    const mx = Math.max(...ll);
+    let e = ll.map(x => Math.exp(x - mx));
+    const s = e.reduce((a, x) => a + x, 0);
+    B.push(e.map(x => x / s));
+  }
+
+  // ---- pose init: density peak of each object's votes (or the clamp)
+  let mu = [];
+  for (let k = 0; k < K; k++) {
+    if (clampPose && clampPose[k]) { mu.push(clampPose[k].slice()); continue; }
+    const vk = [], wk = [];
+    for (let i = 0; i < N; i++)
+      for (let ci = 0; ci < cands[i].length; ci++)
+        if (cands[i][ci][0] === k) { vk.push(votes[i][ci]); wk.push(B[i][ci]); }
+    mu.push(vk.length ? densityPeaks(vk, wk, 1)[0] : [0, 0, 0, 0]);
+  }
+  let Sig = mu.map(() => [[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]]);
+
+  for (let it = 0; it < iters; it++) {
+    // pose fusion
+    const Lam = [], eta = [];
+    for (let k = 0; k < K; k++) { Lam.push(P0inv.map(r => r.slice())); eta.push([0,0,0,0]); }
+    for (let i = 0; i < N; i++) {
+      for (let ci = 0; ci < cands[i].length; ci++) {
+        const k = cands[i][ci][0];
+        const v = votes[i][ci].slice();
+        v[2] = mu[k][2] + wrapPi(v[2] - mu[k][2]);
+        const w = B[i][ci];
+        Lam[k] = matAdd(Lam[k], Vinv, w);
+        const Vv = mat4Vec(Vinv, v);
+        for (let q = 0; q < 4; q++) eta[k][q] += w * Vv[q];
+      }
+    }
+    Sig = Lam.map(mat4Inv);
+    for (let k = 0; k < K; k++) {
+      if (clampPose && clampPose[k]) {
+        mu[k] = clampPose[k].slice();
+        Sig[k] = [[1e-6,0,0,0],[0,1e-6,0,0],[0,0,1e-6,0],[0,0,0,1e-6]];
+      } else {
+        mu[k] = mat4Vec(Sig[k], eta[k]);
+        mu[k][2] = wrapPi(mu[k][2]);
+      }
+    }
+
+    // assignment update with cavity
+    const newB = [];
+    for (let i = 0; i < N; i++) {
+      const nc = cands[i].length;
+      const ll = new Array(nc + 1);
+      for (let ci = 0; ci < nc; ci++) {
+        const k = cands[i][ci][0];
+        const v = votes[i][ci].slice();
+        v[2] = mu[k][2] + wrapPi(v[2] - mu[k][2]);
+        let mC, Sk;
+        if (cavity && !(clampPose && clampPose[k])) {
+          const Lc = matAdd(Lam[k], Vinv, -B[i][ci]);
+          const Vv = mat4Vec(Vinv, v);
+          const ecav = [0,1,2,3].map(q => eta[k][q] - B[i][ci] * Vv[q]);
+          const Sc = mat4Inv(Lc);
+          mC = mat4Vec(Sc, ecav);
+          Sk = Sc;
+        } else {
+          mC = mu[k]; Sk = Sig[k];
+        }
+        const r = [v[0] - mC[0], v[1] - mC[1], wrapPi(v[2] - mC[2]), v[3] - mC[3]];
+        const Cov = matAdd(Sk, Vmat, 1);
+        const Ci = mat4Inv(Cov);
+        const Cr = mat4Vec(Ci, r);
+        const quad = r[0]*Cr[0] + r[1]*Cr[1] + r[2]*Cr[2] + r[3]*Cr[3];
+        ll[ci] = base[i][ci] - 0.5 * quad - 0.5 * Math.log(mat4Det(Cov));
+      }
+      ll[nc] = outLL;
+      const mx = Math.max(...ll);
+      let e = ll.map(x => Math.exp(x - mx));
+      const s = e.reduce((a, x) => a + x, 0);
+      e = e.map(x => x / s);
+      newB.push(e.map((x, q) => damping * x + (1 - damping) * B[i][q]));
+    }
+    B = newB;
+    if (onIter) onIter(it, marginals(), mu, Sig);
+  }
+
+  function marginals() {
+    const marg = [];
+    for (let i = 0; i < N; i++) {
+      if (cands[i].length === 0) {
+        // no evidence: assignment belief reverts to the prior (uniform),
+        // not to a confident "outlier" — this is what permanence means.
+        marg.push(new Array(K + 1).fill(1 / (K + 1)));
+        continue;
+      }
+      const m = new Array(K + 1).fill(0);
+      for (let ci = 0; ci < cands[i].length; ci++) m[cands[i][ci][0]] += B[i][ci];
+      m[K] = B[i][cands[i].length];
+      marg.push(m);
+    }
+    return marg;
+  }
+
+  return { marg: marginals(), mu, Sig, cands, votes, B };
+}
+
+/* Numpy-matching reference render (verification + full-res compositor).
+   pre[c] += color_c * env * carrier ; out = sigmoid(2 * pre).
+   Returns {pre: Float32Array(3*H*H)} pre-sigmoid field. */
+function renderPre(atoms, H, pre) {
+  pre = pre || new Float32Array(3 * H * H);
+  const lim = 3.2; // envelope support cut, in sigmas
+  for (const a of atoms) {
+    const [ax, ay, th, su, sv, f, ph, r, g, b] = a;
+    const ct = Math.cos(th), st = Math.sin(th);
+    const rad = lim * Math.max(su, sv);
+    // pixel bbox: x in [-1,1] maps to col (H-1)*(x+1)/2
+    const x0 = Math.max(0, Math.floor((ax - rad + 1) / 2 * (H - 1)));
+    const x1 = Math.min(H - 1, Math.ceil((ax + rad + 1) / 2 * (H - 1)));
+    const y0 = Math.max(0, Math.floor((ay - rad + 1) / 2 * (H - 1)));
+    const y1 = Math.min(H - 1, Math.ceil((ay + rad + 1) / 2 * (H - 1)));
+    for (let py = y0; py <= y1; py++) {
+      const Y = -1 + 2 * py / (H - 1);
+      const dy = Y - ay;
+      for (let px = x0; px <= x1; px++) {
+        const X = -1 + 2 * px / (H - 1);
+        const dx = X - ax;
+        const u = ct * dx + st * dy;
+        const v = -st * dx + ct * dy;
+        const eArg = 0.5 * ((u / su) * (u / su) + (v / sv) * (v / sv));
+        if (eArg > lim * lim / 2 * 1.6) continue;
+        const env = Math.exp(-eArg);
+        const car = Math.cos(TAU * f * u + ph);
+        const ec = env * car;
+        const idx = py * H + px;
+        pre[idx] += r * ec;
+        pre[H * H + idx] += g * ec;
+        pre[2 * H * H + idx] += b * ec;
+      }
+    }
+  }
+  return pre;
+}
+
+function sigmoidField(pre, H, out) {
+  out = out || new Uint8ClampedArray(4 * H * H);
+  const n = H * H;
+  for (let i = 0; i < n; i++) {
+    out[4 * i]     = 255 / (1 + Math.exp(-2 * pre[i]));
+    out[4 * i + 1] = 255 / (1 + Math.exp(-2 * pre[n + i]));
+    out[4 * i + 2] = 255 / (1 + Math.exp(-2 * pre[2 * n + i]));
+    out[4 * i + 3] = 255;
+  }
+  return out;
+}
+
+/* Ownership field: P(k|pixel) through the atoms' actual envelopes,
+   energy-weighted. Port of bet6_open.ownership_field. */
+function ownershipField(obs, marg, K, H) {
+  const O = [];
+  for (let k = 0; k <= K; k++) O.push(new Float32Array(H * H));
+  const lim = 3.2;
+  for (let i = 0; i < obs.length; i++) {
+    const a = obs[i];
+    const energy = Math.hypot(a[7], a[8], a[9]);
+    const ct = Math.cos(a[2]), st = Math.sin(a[2]);
+    const rad = lim * Math.max(a[3], a[4]);
+    const x0 = Math.max(0, Math.floor((a[0] - rad + 1) / 2 * (H - 1)));
+    const x1 = Math.min(H - 1, Math.ceil((a[0] + rad + 1) / 2 * (H - 1)));
+    const y0 = Math.max(0, Math.floor((a[1] - rad + 1) / 2 * (H - 1)));
+    const y1 = Math.min(H - 1, Math.ceil((a[1] + rad + 1) / 2 * (H - 1)));
+    for (let py = y0; py <= y1; py++) {
+      const Y = -1 + 2 * py / (H - 1);
+      const dy = Y - a[1];
+      for (let px = x0; px <= x1; px++) {
+        const X = -1 + 2 * px / (H - 1);
+        const dx = X - a[0];
+        const u = ct * dx + st * dy;
+        const v = -st * dx + ct * dy;
+        const env = Math.exp(-0.5 * ((u / a[3]) ** 2 + (v / a[4]) ** 2));
+        const idx = py * H + px;
+        for (let k = 0; k <= K; k++) O[k][idx] += marg[i][k] * energy * env;
+      }
+    }
+  }
+  const P = O.map(() => new Float32Array(H * H));
+  const ent = new Float32Array(H * H);
+  const support = new Uint8Array(H * H);
+  for (let idx = 0; idx < H * H; idx++) {
+    let tot = 0;
+    for (let k = 0; k <= K; k++) tot += O[k][idx];
+    support[idx] = tot > 0.05 ? 1 : 0;
+    let e = 0;
+    for (let k = 0; k <= K; k++) {
+      const p = O[k][idx] / (tot + 1e-6);
+      P[k][idx] = p;
+      e -= p * Math.log2(p + 1e-12);
+    }
+    ent[idx] = e;
+  }
+  return { P, ent, support };
+}
+
+/* Assignment entropy per atom, in bits. */
+function atomEntropy(marg) {
+  return marg.map(m => {
+    let e = 0;
+    for (const p of m) e -= p * Math.log2(p + 1e-12);
+    return e;
+  });
+}
+
+
+</script>
+<script>
+const TEMPLATE_DATA = {"tractor": [[-0.51132, -0.16953, 0.29631, 0.53389, 0.57209, 0.51729, 1.29966, -0.27333, 0.02914, 0.212], [0.04279, -0.05144, 2.01574, 0.63621, 0.39481, 0.3802, 2.53513, -0.02872, 0.03073, 0.39571], [0.74008, 0.6197, 1.19651, 0.4287, 0.56825, 0.40151, 2.4316, -0.75901, -0.40031, -0.00457], [-0.35638, -0.75766, 0.38208, 0.48894, 1.17279, 0.44629, 0.86068, -0.35371, 0.03935, 0.2008], [-0.06786, -0.92476, 0.70535, 0.33108, 0.31587, 0.4291, 5.83279, -0.06761, 0.04858, -0.01195], [-0.2148, 0.42264, 1.7117, 0.49657, 0.29448, 0.52431, 1.49551, -0.2201, -0.33196, -0.10095], [-0.02604, 0.69934, 0.52943, 0.39612, 0.45056, 0.73357, 4.01636, -0.20094, -0.01093, -0.07787], [0.83424, -0.46273, 1.68095, 0.94246, 0.31357, 0.34569, 0.1125, -0.60771, -0.15799, 0.12486], [-0.78295, -0.72997, 1.70366, 0.28517, 0.22882, 0.54158, 4.59636, -0.00842, 0.0498, 0.07503], [0.55078, 0.60019, 2.81977, 0.30877, 0.31683, 0.46632, 3.75183, -0.01177, -0.13154, 0.07121], [0.69374, -0.58549, -0.37017, 0.40621, 0.60416, 0.41019, 5.80616, -0.57024, -0.09646, 0.06632], [-0.33336, 0.82676, 0.4419, 0.26029, 0.34335, 0.3057, 3.29688, -0.45898, -0.32204, 0.23681], [0.55907, -0.0605, 1.07361, 0.81886, 1.18774, 0.21582, 1.47004, -0.38154, -0.30183, 0.07887], [-0.04143, 0.25988, 3.10379, 1.07214, 0.58899, 0.45205, 0.06681, 0.4106, -0.03169, -0.3431], [0.69107, 0.81699, 1.24851, 0.66823, 0.97417, 0.53606, 3.33218, -0.42356, -0.49677, 0.10673], [0.06491, -0.11974, 2.59665, 0.49214, 0.2063, 0.2844, 5.98887, 0.03299, -0.37785, -0.2858], [0.13362, -0.25207, 1.97443, 0.57994, 0.67508, 0.35337, 1.7578, -0.32245, 0.06226, 0.23905], [-0.12948, 0.06077, 2.21893, 0.32096, 0.42194, 0.50901, 1.12442, 0.15535, -0.06575, -0.02247], [0.22213, 0.18771, 1.32569, 1.02978, 0.70877, 0.8526, 6.04976, -0.4632, -0.13824, 0.05291], [0.39251, 0.14823, 0.89313, 0.70401, 0.34626, 0.87616, 2.45504, 0.67757, -0.04804, -0.23117], [-0.43129, 0.18427, 1.12959, 0.58274, 0.72405, 0.27956, 0.82655, -0.35719, -0.19535, -0.16786], [-0.2215, -0.35719, 1.34193, 0.65435, 0.62581, 0.23951, 3.47737, 0.19393, 0.35505, -0.0272], [0.01175, 0.86354, 1.2599, 0.54082, 0.32871, 0.33454, 4.6304, -0.21494, -0.01761, 0.46133], [-0.61823, -0.86887, 1.59415, 0.37812, 0.60813, 0.33222, 3.63388, 0.7344, 0.17018, -0.26499], [-0.61035, 0.64818, -0.38755, 0.45474, 0.26038, 1.31941, 3.20052, -1.27684, -0.66723, 0.20599], [0.49855, -0.16366, -0.01529, 0.20376, 0.24878, 1.68963, 3.00381, 0.42488, -0.0385, -0.28801], [-0.25422, -0.37665, 2.47094, 0.16818, 0.09983, 1.33529, 3.92959, 0.47086, 0.09057, -0.20158], [0.14313, -0.36996, 0.76905, 0.20043, 0.12678, 0.94272, 2.75232, -0.03728, 1.07662, 1.84414], [-0.40852, 0.48463, 2.19873, 0.05425, 0.0751, 3.25648, 3.42041, 4.72942, 4.89542, 3.41778], [0.95483, 0.88407, 2.41528, 0.20221, 0.10379, 0.92955, 0.04066, 0.72432, 0.28937, -0.25415], [-0.63038, -0.99465, 1.46676, 0.18629, 0.39646, 0.92971, 0.72001, -0.4436, -0.1986, 0.08147], [0.86145, -0.08669, 2.19067, 0.17386, 0.18784, 0.68012, 4.149, 0.02719, 0.11011, -0.11268], [-0.14663, 0.47219, 0.76624, 0.06033, 0.09015, 3.59461, 1.0547, -3.88285, -2.98477, -1.47569], [0.69023, 0.43519, 1.70912, 0.08562, 0.28504, 1.86853, 3.03856, -1.15051, -0.50486, 0.23435], [-0.72629, 0.74982, 0.01523, 0.06777, 0.34569, 2.37406, 4.20668, 2.75075, 1.21358, -0.62702], [-0.44439, 0.24797, 0.41835, 0.08258, 0.12805, 1.53693, 2.65499, 0.92954, 0.83305, 1.24313], [-0.75433, -0.16703, 0.54805, 0.48404, 0.74907, 1.06289, 1.54993, 0.16124, 0.0306, -0.14684], [-0.2735, -0.25969, 1.56987, 0.02763, 0.15727, 3.52635, 0.69233, -2.49823, 0.52902, 2.01453], [-0.65115, 0.4241, 2.44041, 0.12886, 0.06055, 0.84028, 0.85761, 1.56157, 0.71949, -0.57071], [0.02771, 0.38558, 1.94721, 0.05637, 0.06683, 1.22243, 5.78848, 0.23702, 0.11808, -0.02243], [-0.06746, 0.27307, 1.92997, 0.07893, 0.20125, 3.60551, 0.20608, -2.25144, -0.42061, 1.0596], [-0.44886, -0.0656, 3.12865, 0.02156, 0.13547, 2.05894, 3.23683, -3.16722, 0.95037, 2.84736], [0.43498, 0.05214, 3.13437, 0.07397, 0.14776, 2.16541, 5.7597, -1.06643, 0.14158, 0.58054], [0.88507, 0.20511, 1.33574, 0.12857, 0.18834, 1.41594, 2.52691, 1.06632, 0.51068, -0.2469], [-0.28899, 0.59122, 2.48504, 0.12675, 0.16743, 0.97389, 6.19646, 0.66084, 0.63768, -0.34212], [-0.93304, 0.04877, -0.08275, 0.13055, 0.34937, 0.98034, 0.59811, -0.78909, -0.28445, 0.32371], [-0.90928, -0.48677, 0.69734, 0.08686, 0.19006, 1.87016, 0.12468, -0.19251, -0.01449, 0.03087], [-0.12033, 0.23143, 2.69591, 0.06178, 0.08862, 2.81303, 2.25763, 2.84601, 0.83598, 1.54698], [0.88566, -0.90323, 2.84091, 0.24578, 0.30708, 0.45962, 3.38812, 0.35022, 0.1462, -0.19893], [0.29101, 0.3663, 2.94783, 0.11264, 0.08198, 0.7854, 6.26222, -2.00645, -1.9805, -2.07098], [-0.38008, 0.16449, 1.175, 0.07088, 0.10779, 2.98116, 3.03747, 3.63809, 1.22557, 1.1389], [0.26914, -0.08444, 2.919, 0.23009, 0.27584, 0.79195, 2.5699, -0.55873, 0.47682, 0.50905], [0.24833, 0.38039, -0.44126, 0.16939, 0.11938, 1.96468, 2.83362, 2.46253, 1.72106, 1.44653], [0.40045, -0.56704, 2.66886, 0.09011, 0.29504, 1.15022, 6.0321, -0.62264, 0.04362, 0.31002], [0.34351, -1.0786, 1.633, 0.073, 0.25259, 2.00655, 3.46659, 0.79456, 0.11558, -0.36869], [-0.08699, -0.26446, 1.04667, 0.11485, 0.30394, 1.46518, 6.15769, 0.37232, -0.47086, -0.66561], [0.29492, 0.30456, 1.08775, 0.20486, 0.10298, 2.01755, 2.82728, 1.38947, 0.36118, -0.16914], [-0.13266, -0.03108, 1.90666, 0.28803, 0.28744, 1.64667, 5.70173, 0.65214, -0.22817, -0.57284], [-0.54449, 0.06301, 3.41908, 0.16188, 0.2194, 1.42647, 2.18313, 0.9018, -0.18741, -0.72781], [0.80588, 0.09365, 1.67835, 0.19632, 0.19025, 0.72345, 6.01697, -0.26899, -0.30598, 0.27257], [-0.00053, 0.44736, 0.12121, 0.38941, 0.12868, 1.67886, 6.15445, 0.73867, 0.55266, 0.27379], [0.21901, 0.51441, 2.0068, 0.05369, 0.0885, 3.75518, 2.227, -2.0584, -1.53658, -0.60749], [-0.51806, 0.06035, 0.2134, 0.03217, 0.19356, 1.62008, 2.9798, 0.4734, -0.27746, -0.89157], [-0.26621, 0.41008, 1.89747, 0.19402, 0.16976, 1.38625, 3.91939, 1.65851, 0.71167, 0.90493], [0.26946, 0.42994, 0.93037, 0.13951, 0.11088, 2.07591, 3.76234, 1.18118, 1.05764, 0.71005], [0.93523, -1.02441, -0.37408, 0.10234, 0.09619, 2.02391, 5.82936, -0.3956, -0.09199, 0.10729], [-0.32399, 0.29788, 0.77737, 0.1867, 0.18849, 1.09829, 2.89273, 0.68791, 0.35574, 0.9761], [-0.78644, -0.64842, 2.72787, 0.22374, 0.35956, 0.65099, 2.81081, 0.5934, 0.21385, -0.22337], [0.05004, -0.94922, 3.02735, 0.14649, 0.29466, 0.60118, 5.70003, -0.18941, -0.0768, 0.01767], [-0.20239, 0.41177, 3.04735, 0.30478, 0.08828, 1.66758, 2.34957, 1.09563, 0.98607, 0.60293], [-0.26081, 0.14058, 1.95766, 0.05991, 0.08591, 2.45766, 5.58879, -0.63423, -0.16411, -0.01996], [-0.08915, 0.4833, 1.60105, 0.33785, 0.3943, 0.96694, 1.36355, -0.80626, -0.58658, -0.15883], [0.27888, 0.3307, 1.21687, 0.16863, 0.18935, 1.86384, 2.44824, 0.70151, 0.11779, 0.52139], [-0.15156, -0.33726, 2.47167, 0.31887, 0.05662, 2.23154, 3.0557, 1.74002, -0.66419, -1.50708], [0.34269, -0.13153, 3.13894, 0.01984, 0.28641, 5.29336, 4.77377, 4.91841, -1.71035, -4.26649], [-0.47696, 0.34295, 2.21724, 0.1111, 0.15365, 3.35082, 5.95964, -1.52696, -0.76904, 0.13508], [-0.47147, 0.39082, -0.1932, 0.10801, 0.09103, 2.09663, 2.51446, 3.05913, 1.49566, 1.00867], [0.2334, 0.01021, 0.08357, 0.1066, 0.13333, 0.60474, 0.06005, 1.0585, -0.18036, -1.00632], [0.65531, -0.55631, -0.49858, 0.15769, 0.1925, 0.52502, 4.26278, 0.69105, 0.00238, -0.29129], [0.13165, -0.52916, 1.5746, 0.01892, 0.15283, 2.40318, 3.06892, -1.92884, 1.42711, 2.1647], [0.40586, -0.31449, -0.01632, 0.0504, 0.20262, 1.73196, 3.54841, 1.24248, -0.26943, -0.80258], [0.36244, 0.4597, 0.85449, 0.05572, 0.08606, 3.21568, 0.89805, -3.88372, -2.68192, -0.96208], [-0.08471, 0.26258, 2.97656, 0.19467, 0.13551, 0.86288, 5.12774, -0.22727, -0.2874, -0.08127], [-0.00528, 0.23969, 1.35556, 0.03462, 0.18933, 3.03775, 0.61039, 2.42755, -1.05802, -2.03872], [0.20948, -0.78023, 1.68373, 0.48587, 0.17351, 3.05556, 3.64542, -0.50745, 0.02775, 0.25496], [0.1557, -0.80362, 1.65522, 0.11223, 0.12789, 3.15435, 0.71393, -0.56382, 0.08153, 0.3799], [-0.20281, -0.21641, 1.04816, 0.3158, 0.27429, 0.77659, 5.35915, 0.77332, -0.1922, -0.46012], [-0.52422, 0.05078, 0.36463, 0.07756, 0.09168, 2.38715, 0.74808, -0.84772, -0.00993, -0.22291], [0.58129, 0.24504, 0.02021, 0.12292, 0.08555, 0.89016, 3.55078, 0.03286, 0.22852, -0.45545], [0.71194, 0.33991, 1.56707, 0.03612, 0.49052, 3.56847, 2.2131, -3.5776, -1.46292, 0.61894], [-0.78376, -0.24591, 2.47573, 0.15255, 0.20513, 0.7148, 2.25745, 0.72127, 0.08756, -0.31461], [0.05296, -0.56244, 1.04799, 0.14088, 0.47544, 1.56306, 0.68235, -0.54231, 0.02044, 0.2566], [-0.87194, -0.72503, 2.68382, 0.29516, 0.13285, 1.47488, 3.95426, -0.05516, -0.07819, 0.07647]], "star": [[-0.85142, -0.64803, 0.9739, 0.34464, 0.40006, 0.21832, 0.83797, -0.01475, -0.2417, -0.19174], [-0.1459, -0.68135, 1.63893, 0.49691, 0.57591, 0.48441, 3.99965, 0.81307, 0.32557, -0.04243], [-0.09365, -0.06118, 3.08851, 0.97177, 0.51748, 0.56215, 3.00423, -0.64887, -0.28128, 0.06573], [-0.73483, -0.78284, 0.65569, 0.58522, 0.82744, 0.17927, 2.6655, 0.31686, 0.06793, 0.27154], [-0.73988, 0.51118, 2.46352, 0.52201, 0.59702, 0.18911, 2.6716, 0.26692, 0.39922, 0.35025], [-0.42786, 0.10196, 2.95382, 0.63591, 0.31386, 0.51328, 4.45154, -0.81922, -0.37251, 0.03006], [0.22899, 0.64112, 2.86104, 0.40596, 0.41557, 0.41943, 3.93674, 0.03207, 0.01758, 0.19386], [0.34549, 0.42633, 0.85525, 0.54265, 0.6566, 0.45335, 5.32615, -0.79372, -0.46328, -0.07064], [-0.16945, -0.79509, 1.43029, 0.4491, 0.7523, 0.19155, 3.93204, 0.24219, 0.83707, 0.37394], [0.62167, -0.2935, 0.69851, 0.28533, 0.23712, 0.25022, 4.30894, 0.00592, 0.0557, 0.17846], [0.73585, 0.4428, 3.4778, 0.3334, 0.60149, 0.42906, 0.06212, -0.90084, -1.00702, -0.32331], [-0.70967, 0.79668, 0.81162, 0.78942, 0.41344, 0.20924, 3.48259, 0.45926, 0.70755, 0.1511], [0.68971, -0.3031, 2.96305, 0.4798, 0.71759, 0.26224, 3.40631, 0.2773, 0.40291, 0.39152], [-0.2397, -0.15918, 1.36762, 0.75962, 0.44195, 0.50499, 5.71991, 0.42044, 0.14506, -0.30611], [-0.70551, -0.58917, 0.97703, 0.42042, 0.97452, 0.30289, 3.39505, 0.5609, 0.6682, 0.28433], [0.54444, -0.39261, 1.61439, 1.11426, 0.94236, 0.58944, 4.73866, 0.38483, 0.21553, 0.03251], [-0.02514, -0.27226, 2.51984, 0.69286, 1.0124, 0.20268, 6.0934, -0.15194, -0.19774, -0.34533], [-0.41959, 0.42397, 2.01913, 0.46092, 1.35533, 0.35827, 2.49525, 0.18772, 0.29375, 0.2699], [-0.02833, -0.30604, 1.68292, 0.86259, 0.53501, 0.56201, 5.2501, 0.72936, 0.26232, 0.03481], [-0.13264, 0.05756, -0.20461, 0.72708, 0.38831, 0.53609, 2.85459, -0.49901, -0.12674, 0.2916], [-0.4613, 0.35621, 2.50826, 0.48537, 0.92907, 0.41945, 5.72075, -0.21258, -0.21569, -0.21834], [0.87795, -0.2651, 3.05135, 1.1307, 1.07381, 0.58338, 5.76103, -0.61159, -0.39314, -0.01049], [0.70319, -0.13284, 3.2747, 0.51326, 0.62184, 0.19156, 2.12246, 0.05329, 0.18485, 0.36337], [-0.47182, 0.55643, 3.22499, 0.10614, 0.03647, 3.53809, 3.39221, -1.09682, -0.95505, 0.05421], [0.077, -0.61909, -0.00249, 0.25729, 0.16389, 1.88198, 1.08643, 1.54209, 1.11291, -0.10426], [0.51779, -0.06015, 0.82298, 0.09952, 0.18787, 2.13247, 1.86107, 2.93541, 1.94333, 0.08953], [0.66525, 0.93509, 1.49865, 0.07289, 0.11458, 1.95405, 2.81234, 0.31411, 0.47553, 0.20468], [-0.22724, 0.52485, 1.03038, 0.11639, 0.22478, 3.05742, 2.4231, 1.96853, 1.39221, 0.03429], [-0.17266, -0.56438, 3.57002, 0.21649, 0.2024, 1.85278, 1.715, 1.76204, 0.95224, 0.12334], [0.90726, -0.47898, -0.01659, 0.18662, 0.48248, 0.86409, 6.25612, -0.56932, -0.60727, -0.31201], [-1.02724, -0.93188, -0.29901, 0.19827, 0.18343, 0.96075, 1.93073, 0.18756, 0.62515, 0.26626], [-0.4853, -0.80495, 2.79047, 0.18235, 0.20985, 0.73234, 3.06911, 0.53869, 0.77509, 0.07399], [-0.03127, -0.05002, 1.30031, 0.19137, 0.14051, 0.96705, 6.18004, -0.15057, -1.11646, -1.1583], [0.67774, -0.28173, 1.24001, 0.1168, 0.09084, 4.48548, 5.68555, 4.11223, 2.60787, -0.00386], [-0.66842, 0.18126, 3.06543, 0.41084, 0.38316, 1.15341, 4.97672, -0.5655, -0.76855, -0.11273], [-0.90231, 0.24161, 3.22391, 0.43176, 0.39153, 2.24872, 4.57426, -0.30216, -0.38884, -0.06515], [-0.15532, -0.31814, 0.88984, 0.19856, 0.25804, 1.35972, 0.36279, 0.81806, 0.65761, -0.18457], [-0.49358, 0.38956, 3.47123, 0.06091, 0.27024, 4.33184, 5.74862, -3.64737, -2.81589, 0.02066], [-0.40108, 0.3955, 0.68147, 0.25779, 0.16864, 1.70499, 2.68441, -1.81014, -1.37865, 0.11235], [-0.53487, -0.43585, 1.37658, 0.22961, 0.20849, 1.30953, 0.78132, -1.10895, -0.75974, -0.07768], [0.1939, -0.12598, 1.66163, 0.36755, 0.40302, 1.74812, 4.10091, -1.29248, -0.63674, -0.03274], [-0.02675, -0.70749, 0.31281, 0.11256, 0.20815, 3.11656, 0.06503, 2.48202, 1.65538, -0.05123], [-0.43475, 0.13974, 3.13849, 0.14354, 0.1568, 1.78974, 1.85768, 2.08077, 1.02947, 0.11482], [-0.36387, -0.24766, 2.51962, 0.40401, 0.18308, 1.74956, 1.48042, -1.38082, -0.64646, 0.01781], [-0.1388, 0.91072, 1.04697, 0.18298, 0.15707, 0.54056, 0.54621, -1.03727, -0.963, -0.29964], [0.04461, 0.54767, -0.18421, 0.16739, 0.21365, 1.08237, 1.22388, -0.58438, -0.01222, 0.23716], [0.27212, -0.32581, 0.65448, 0.37898, 0.28276, 1.86673, 0.44916, -1.04288, -0.23246, 0.01483], [-0.88999, 0.88226, 1.94379, 0.21263, 0.24807, 0.70255, 3.47621, 0.59598, 0.75689, 0.25929], [0.75054, 0.01139, 0.39882, 0.09318, 0.32552, 1.50218, 0.08386, -0.43047, -0.64233, -0.09469], [-0.59767, -0.22964, 1.84924, 0.2113, 0.13017, 1.99776, 6.09221, 1.76605, 1.03055, -0.07477], [-0.76839, 0.10424, 0.03023, 0.18661, 0.13282, 0.48187, 2.71227, 0.5906, 0.64477, 0.08477], [-0.98001, -0.72341, -0.01775, 0.18948, 0.31411, 0.81596, 0.03176, -0.64741, -0.69461, -0.03874], [0.71504, -0.66689, 0.04387, 0.08902, 0.25453, 1.35878, 5.88183, -0.67052, -0.50647, -0.25032], [0.9149, 0.84838, 3.31082, 0.13049, 0.16516, 1.25384, 2.80088, 0.52506, 0.97948, 0.32352], [0.27307, 0.38089, 2.86496, 0.28759, 0.28381, 1.93342, 6.21319, 1.37732, 0.88155, -0.00161], [0.44705, -0.32011, 1.58439, 0.13588, 0.18508, 2.66565, 1.62881, -2.17502, -1.11011, 0.12418], [0.94981, -0.09786, 1.77864, 0.08153, 0.05436, 0.85879, 0.24834, -0.13977, -0.24022, -0.1739], [0.30941, 0.63358, 2.35235, 0.06881, 0.07126, 1.31782, 0.79171, -0.23658, -0.06347, -0.01536], [-1.00683, 0.92729, 2.86421, 0.18228, 0.18815, 0.93302, 3.78994, 0.98075, 0.48487, 0.25792], [-0.18072, 0.46379, 0.91904, 0.27752, 0.12324, 2.12109, 2.20912, 0.95093, -0.3412, 0.0611], [0.20649, -0.63008, 2.64866, 0.19324, 0.21779, 1.4302, 0.52492, -1.77408, -0.82452, -0.10933], [0.00309, 0.34568, 1.78034, 0.17458, 0.19435, 2.08031, 3.85062, -1.34247, -1.09681, -0.0114], [0.05601, -0.98288, 1.45977, 0.10095, 0.22326, 1.62278, 3.21793, 0.57778, 0.73659, 0.14645], [0.40072, -0.34188, 1.60615, 0.10834, 0.17344, 2.20454, 4.20139, 1.72982, 0.8884, 0.2457], [0.23361, 0.38402, 2.36103, 0.38782, 0.17427, 1.90539, 0.55556, 1.75158, 0.78059, -0.01056], [0.91666, 0.49551, -0.25629, 0.10762, 0.17569, 0.91347, 5.67813, -0.07943, -0.54254, -0.25401], [0.86823, -0.80504, 2.94648, 0.33059, 0.1896, 2.27087, 1.12463, -0.65891, -0.52316, -0.16955], [-0.58742, -0.34703, 1.57294, 0.04484, 0.28276, 3.24505, 0.31863, -4.26702, -2.66265, -0.13615], [0.42281, -0.12322, 2.88517, 0.187, 0.10397, 1.00701, 0.42082, 1.07358, 0.95257, -0.21164], [0.14093, -0.65651, -0.30444, 0.12717, 0.26735, 4.59614, 0.71932, -3.22149, -1.99458, -0.01129], [0.2596, 0.014, 3.5588, 0.18242, 0.13467, 2.05568, 3.46407, -1.55878, -1.22854, -0.16643], [-0.28729, 0.52111, 0.95979, 0.04453, 0.3058, 3.44677, 5.32395, -3.07833, -2.58861, -0.07765], [0.94043, 0.93133, 3.63612, 0.07845, 0.09995, 1.05339, 3.58465, 0.59319, 0.6761, 0.23762], [-0.48236, 0.95656, 1.37698, 0.1584, 0.14903, 1.67571, 0.61826, -0.81215, -0.67133, -0.2144], [0.48874, -0.28527, 1.19245, 0.2018, 0.13795, 2.02142, 2.16252, -1.54027, -1.277, 0.02691], [-0.72609, -0.27108, 1.66097, 0.03788, 0.1172, 2.61643, 0.21681, 2.40896, 1.98782, -0.16404], [-0.28363, -0.42525, 1.35396, 0.25073, 0.03167, 2.57272, 5.3871, -2.6494, -1.58406, -0.0949], [0.39252, 0.59608, 2.50213, 0.07439, 0.0765, 4.25246, 1.0494, 2.96667, 2.47779, 0.01157], [0.03006, 0.56308, -0.21222, 0.07745, 0.2278, 1.40012, 0.03744, -1.12892, -0.85679, -0.25659], [0.62604, -0.97253, 1.30208, 0.20428, 0.29328, 0.80865, 2.81711, 0.45977, 0.78124, 0.26982], [-0.11063, -0.20619, 1.07046, 0.28338, 0.07231, 2.63316, 5.43608, -1.74751, -1.13458, -0.07423], [0.19225, 0.94001, 1.41744, 0.09908, 0.25384, 1.3207, 3.39715, 0.53607, 1.02115, 0.22783], [-0.00586, 0.59772, 1.63226, 0.41258, 0.26207, 1.19639, 2.15322, 1.03936, 0.84595, 0.05188], [-0.57621, -0.08406, 2.18756, 0.05289, 0.50334, 3.60055, 4.77619, -2.932, -2.17691, -0.07058], [0.16205, -0.40864, 2.63274, 0.1491, 0.2634, 1.8988, 5.65618, 1.46223, 1.00765, -0.02479], [0.56539, -0.55218, 1.68923, 0.20221, 0.21001, 0.88149, 0.62268, -0.44116, -0.99846, -0.05474], [0.35509, 0.43796, 1.33594, 0.35895, 0.04077, 0.67383, 0.965, 1.4656, 1.18225, -0.09682], [0.30127, 0.49259, -0.59925, 0.22173, 0.10046, 3.11057, 2.41658, -3.0412, -1.64906, -0.00152], [-0.12152, 0.65647, 2.6353, 0.08988, 0.13025, 1.86446, 5.92088, -1.16375, -0.61024, -0.13177]]};
+</script>
+<script>
+"use strict";
+/* ============================ playroom app ============================ */
+
+const OBJ_DEFS = [
+  { name: "tractor", color: "#ff6b5e", rgb: [255, 107, 94] },
+  { name: "star",    color: "#5ec8ff", rgb: [94, 200, 255] },
+];
+const OUTLIER_RGB = [120, 128, 143];
+const K = 2;
+const RES = 192;          // scene render resolution
+const OWN_RES = 128;      // ownership overlay resolution
+const NOISE_SCALE = [1, 1, 1, .3, .3, 20, 3, .5, .5, .5];
+
+const templates = [TEMPLATE_DATA.tractor, TEMPLATE_DATA.star];
+
+/* ------------- state ------------- */
+const S = {
+  phase: "soup",              // soup | binding | bound
+  obs: [],                    // observed atoms (world state)
+  gt: [],                     // ground-truth labels (we scrambled, so we know)
+  marg: null, mu: null, Sig: null,
+  assign: null,               // persistent believed assignment; updates only under evidence
+  hidden: [false, false],     // per-object occlusion
+  groupBuf: [],               // per-group pre-sigmoid Float32Array
+  ownField: null,
+  bindFrames: null,
+  coastT: [0, 0],
+};
+
+/* ------------- canvas setup ------------- */
+const stage = document.getElementById("stage");
+const sceneC = document.getElementById("scene-canvas");
+const overC = document.getElementById("overlay-canvas");
+sceneC.width = sceneC.height = RES;
+let CSS = 600;
+function fitStage() {
+  const wrap = document.getElementById("stage-wrap");
+  CSS = Math.floor(Math.min(wrap.clientWidth, wrap.clientHeight) - 8);
+  CSS = Math.max(280, CSS);
+  stage.style.width = stage.style.height = CSS + "px";
+  overC.width = overC.height = CSS * (window.devicePixelRatio || 1);
+  drawOverlay();
+}
+window.addEventListener("resize", fitStage);
+
+/* ------------- pose composition helpers ------------- */
+function composePose(g2, g1) {   // g2 after g1
+  const s2 = Math.exp(g2[3]);
+  const [rx, ry] = rotApply(g2[2], g1[0], g1[1]);
+  return [s2 * rx + g2[0], s2 * ry + g2[1], wrapPi(g1[2] + g2[2]), g1[3] + g2[3]];
+}
+function gestureTranslate(dx, dy) { return [dx, dy, 0, 0]; }
+function gestureRotateAbout(c, drho) {
+  const [rx, ry] = rotApply(drho, c[0], c[1]);
+  return [c[0] - rx, c[1] - ry, drho, 0];
+}
+function gestureScaleAbout(c, ds) {
+  const s = Math.exp(ds);
+  return [c[0] - s * c[0], c[1] - s * c[1], 0, ds];
+}
+
+/* ------------- scene construction ------------- */
+let rngState = 12345;
+function rand() { rngState = (rngState * 1103515245 + 12345) & 0x7fffffff; return rngState / 0x7fffffff; }
+
+function makeClutter(n) {
+  const cl = [];
+  for (let i = 0; i < n; i++) {
+    const su = 0.04 + 0.08 * rand();
+    cl.push([
+      -0.95 + 1.9 * rand(), -0.95 + 1.9 * rand(),
+      -Math.PI / 2 + Math.PI * rand(),
+      su, su * (0.4 + 0.5 * rand()),
+      4 + 10 * rand(),
+      TAU * rand(),
+      rand(), rand(), rand(),
+    ]);
+  }
+  return cl;
+}
+
+function scramble() {
+  const noiseAmt = 0.006 * Math.pow(3, +document.getElementById("noise").value / 3);
+  S.obs = []; S.gt = [];
+  for (let k = 0; k < K; k++) {
+    const xi = [
+      -0.42 + 0.84 * rand(), -0.42 + 0.84 * rand(),
+      -Math.PI + TAU * rand(),
+      -0.18 + 0.3 * rand(),
+    ];
+    const placed = transformAtoms(templates[k], xi);
+    for (const a of placed) { S.obs.push(a); S.gt.push(k); }
+  }
+  for (const a of makeClutter(15)) { S.obs.push(a); S.gt.push(-1); }
+  // observation noise (box-muller)
+  for (const a of S.obs)
+    for (let q = 0; q < 10; q++) {
+      const g = Math.sqrt(-2 * Math.log(rand() + 1e-9)) * Math.cos(TAU * rand());
+      a[q] += g * noiseAmt * NOISE_SCALE[q];
+    }
+  for (const a of S.obs) {
+    a[3] = Math.max(a[3], 0.012); a[4] = Math.max(a[4], 0.008); a[5] = Math.max(a[5], 0.5);
+  }
+  S.marg = null; S.mu = null; S.Sig = null; S.assign = null;
+  S.hidden = [false, false];
+  S.coastT = [0, 0];
+  S.ownField = null;
+  setPhase("soup");
+  rebuildGroupBuffers();
+  renderScene();
+  drawOverlay();
+  updatePanels();
+}
+
+/* ------------- believed grouping ------------- */
+function believedGroup(i) {
+  return S.assign ? S.assign[i] : -2;          // -2 = soup, -1 = outlier
+}
+/* Assignment persists through occlusion: an unobserved atom keeps its last
+   evidenced identity (identity lives in the object, not the pixels).
+   Marginals still go honestly uncertain — that is shown, not hidden. */
+function updateAssign() {
+  if (!S.marg) { S.assign = null; return; }
+  if (!S.assign) S.assign = new Array(S.obs.length).fill(-1);
+  for (let i = 0; i < S.obs.length; i++) {
+    const prev = S.assign[i];
+    if (prev >= 0 && S.hidden[prev]) continue;   // no evidence: keep identity
+    const m = S.marg[i];
+    let best = 0;
+    for (let k = 1; k <= K; k++) if (m[k] > m[best]) best = k;
+    S.assign[i] = best === K ? -1 : best;
+  }
+}
+function groupAtomIdx(k) {
+  const out = [];
+  for (let i = 0; i < S.obs.length; i++) if (believedGroup(i) === k) out.push(i);
+  return out;
+}
+
+/* ------------- rendering ------------- */
+function rebuildGroupBuffers() {
+  // groups: 0..K-1 believed objects (or gt in soup for compositing speed), K = rest
+  S.groupBuf = [];
+  const groupOf = i => {
+    const g = S.marg ? believedGroup(i) : S.gt[i];
+    return g >= 0 ? g : K;
+  };
+  for (let g = 0; g <= K; g++) S.groupBuf.push(new Float32Array(3 * RES * RES));
+  for (let i = 0; i < S.obs.length; i++) {
+    const g = groupOf(i);
+    if (g < K && S.hidden[g]) continue;
+    renderPre([S.obs[i]], RES, S.groupBuf[g]);
+  }
+}
+function rebuildOneGroup(k) {
+  S.groupBuf[k] = new Float32Array(3 * RES * RES);
+  if (S.hidden[k]) return;
+  const idx = groupAtomIdx(k);
+  renderPre(idx.map(i => S.obs[i]), RES, S.groupBuf[k]);
+}
+const sceneCtx = sceneC.getContext("2d");
+const compositePre = new Float32Array(3 * RES * RES);
+const sceneImg = new ImageData(RES, RES);
+function renderScene() {
+  compositePre.fill(0);
+  for (const buf of S.groupBuf)
+    for (let i = 0; i < compositePre.length; i++) compositePre[i] += buf[i];
+  sigmoidField(compositePre, RES, sceneImg.data);
+  sceneCtx.putImageData(sceneImg, 0, 0);
+}
+
+/* world [-1,1] <-> overlay pixel */
+function w2p(x) { return (x + 1) / 2 * overC.width; }
+function p2w(px) { return px / overC.width * 2 - 1; }
+
+function drawOverlay() {
+  const ctx = overC.getContext("2d");
+  ctx.clearRect(0, 0, overC.width, overC.height);
+  const px1 = overC.width / CSS; // 1 css px
+
+  // ownership tint + entropy glow
+  if (S.ownField && (ovOwn.checked || ovEnt.checked)) {
+    const { P, ent, support } = S.ownField;
+    const im = ctx.createImageData(OWN_RES, OWN_RES);
+    for (let i = 0; i < OWN_RES * OWN_RES; i++) {
+      if (!support[i]) continue;
+      let r = 0, g = 0, b = 0, a = 0;
+      if (ovOwn.checked) {
+        let best = 0;
+        for (let k = 1; k <= K; k++) if (P[k][i] > P[best][i]) best = k;
+        const rgb = best === K ? OUTLIER_RGB : OBJ_DEFS[best].rgb;
+        const conf = P[best][i];
+        r = rgb[0]; g = rgb[1]; b = rgb[2]; a = 90 * conf;
+      }
+      if (ovEnt.checked) {
+        const e = Math.min(1, ent[i] / 1.58);
+        const ea = 160 * e * e;
+        if (ea > a) { r = 200; g = 107; b = 255; a = ea; }
+      }
+      im.data[4*i] = r; im.data[4*i+1] = g; im.data[4*i+2] = b; im.data[4*i+3] = a;
+    }
+    const tmp = document.createElement("canvas");
+    tmp.width = tmp.height = OWN_RES;
+    tmp.getContext("2d").putImageData(im, 0, 0);
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(tmp, 0, 0, overC.width, overC.height);
+  }
+
+  // atoms as oriented strokes
+  if (ovAtoms.checked) {
+    for (let i = 0; i < S.obs.length; i++) {
+      const a = S.obs[i];
+      const g = believedGroup(i);
+      if (g >= 0 && S.hidden[g]) continue;
+      let rgb = OUTLIER_RGB, alpha = 0.5;
+      if (g === -2) { rgb = [150, 155, 168]; alpha = 0.55; }
+      else if (g >= 0) {
+        rgb = OBJ_DEFS[g].rgb;
+        alpha = 0.25 + 0.75 * S.marg[i][g];
+      } else if (S.marg) {
+        alpha = 0.25 + 0.55 * S.marg[i][K];
+      }
+      const len = Math.max(3 * px1, a[3] * overC.width * 0.5);
+      const cx = w2p(a[0]), cy = w2p(a[1]);
+      const dx = Math.cos(a[2]) * len / 2, dy = Math.sin(a[2]) * len / 2;
+      ctx.strokeStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${alpha})`;
+      ctx.lineWidth = 1.6 * px1;
+      ctx.beginPath();
+      ctx.moveTo(cx - dx, cy - dy);
+      ctx.lineTo(cx + dx, cy + dy);
+      ctx.stroke();
+    }
+  }
+
+  // pose beliefs: crosshair, orientation tick, covariance ellipse
+  if (ovPose.checked && S.mu) {
+    for (let k = 0; k < K; k++) {
+      const mu = S.mu[k], Sg = S.Sig[k];
+      const cx = w2p(mu[0]), cy = w2p(mu[1]);
+      const col = OBJ_DEFS[k].color;
+      ctx.strokeStyle = col;
+      ctx.lineWidth = 1.2 * px1;
+      // crosshair
+      ctx.beginPath();
+      ctx.moveTo(cx - 7 * px1, cy); ctx.lineTo(cx + 7 * px1, cy);
+      ctx.moveTo(cx, cy - 7 * px1); ctx.lineTo(cx, cy + 7 * px1);
+      ctx.stroke();
+      // orientation tick, length ~ scale
+      const L = 26 * px1 * Math.exp(mu[3]);
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + Math.cos(mu[2]) * L, cy + Math.sin(mu[2]) * L);
+      ctx.stroke();
+      // 2-sigma covariance ellipse on translation block (+ coasting growth)
+      const coast = S.coastT[k];
+      const q = coast * coast * 0.0012;
+      const a11 = Sg[0][0] + q, a12 = Sg[0][1], a22 = Sg[1][1] + q;
+      const tr = a11 + a22, det = a11 * a22 - a12 * a12;
+      const disc = Math.sqrt(Math.max(0, tr * tr / 4 - det));
+      const l1 = tr / 2 + disc, l2 = Math.max(1e-12, tr / 2 - disc);
+      const ang = Math.atan2(l1 - a11, a12 || 1e-12);
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(-ang + Math.PI / 2);
+      ctx.setLineDash(S.hidden[k] ? [5 * px1, 4 * px1] : []);
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 2 * Math.sqrt(l1) * overC.width / 2, 2 * Math.sqrt(l2) * overC.width / 2, 0, 0, TAU);
+      ctx.stroke();
+      ctx.restore();
+      ctx.setLineDash([]);
+      if (S.hidden[k]) {
+        ctx.fillStyle = col;
+        ctx.font = `${11 * px1}px ${getComputedStyle(document.body).fontFamily}`;
+        ctx.fillText("believed, unseen", cx + 10 * px1, cy - 10 * px1);
+      }
+    }
+  }
+}
+
+/* ------------- BP wiring ------------- */
+function runBind(opts = {}) {
+  const hiddenMask = S.obs.map((_, i) => {
+    const g = S.marg ? believedGroup(i) : S.gt[i];
+    return g >= 0 && S.hidden[g];
+  });
+  const frames = [];
+  const res = bpBind(templates, S.obs, {
+    iters: opts.iters ?? 40,
+    clampPose: opts.clampPose ?? null,
+    hiddenMask,
+    onIter: (it, marg, mu, Sig) => {
+      if (opts.animate) frames.push({
+        marg, mu: mu.map(m => m.slice()),
+        Sig: Sig.map(M => M.map(r => r.slice())),
+      });
+    },
+  });
+  return { res, frames };
+}
+
+function bind(animate = true) {
+  if (S.phase === "binding") return;
+  S.assign = null;   // full re-bind: identities re-inferred from scratch
+  setPhase("binding");
+  setTimeout(() => {
+    const { res, frames } = runBind({ iters: 40, animate });
+    if (!animate) { finishBind(res); return; }
+    let f = 0;
+    const meter = document.querySelector("#bind-meter > div");
+    const step = () => {
+      if (f < frames.length) {
+        S.marg = frames[f].marg; S.mu = frames[f].mu; S.Sig = frames[f].Sig;
+        updateAssign();
+        meter.style.width = (100 * (f + 1) / frames.length) + "%";
+        document.getElementById("m-it").textContent = (f + 1);
+        drawOverlay(); updatePanels();
+        f++;
+        requestAnimationFrame(step);
+      } else finishBind(res);
+    };
+    step();
+  }, 30);
+}
+
+function finishBind(res) {
+  S.marg = res.marg; S.mu = res.mu; S.Sig = res.Sig;
+  updateAssign();
+  rebuildGroupBuffers();
+  renderScene();
+  refreshOwnership();
+  setPhase("bound");
+  drawOverlay(); updatePanels();
+}
+
+function refreshOwnership() {
+  if (!S.marg) { S.ownField = null; return; }
+  const vis = [], visMarg = [];
+  for (let i = 0; i < S.obs.length; i++) {
+    const g = believedGroup(i);
+    if (g >= 0 && S.hidden[g]) continue;
+    vis.push(S.obs[i]); visMarg.push(S.marg[i]);
+  }
+  S.ownField = ownershipField(vis, visMarg, K, OWN_RES);
+}
+
+/* re-settle after an intervention: short BP with the moved object clamped */
+function resettle(k, clampXi) {
+  const clamp = [null, null]; clamp[k] = clampXi;
+  const { res } = runBind({ iters: 10, clampPose: clamp });
+  S.marg = res.marg; S.mu = res.mu; S.Sig = res.Sig;
+  S.mu[k] = clampXi.slice();
+  updateAssign();
+  rebuildGroupBuffers();
+  renderScene();
+  refreshOwnership();
+  drawOverlay(); updatePanels();
+  document.getElementById("m-it").textContent = "15 (re-settle)";
+}
+
+/* ------------- interventions (shared by drag + prompt) ------------- */
+function applyGesture(k, g) {
+  const idx = groupAtomIdx(k);
+  for (const i of idx) S.obs[i] = transformAtoms([S.obs[i]], g)[0];
+  S.mu[k] = composePose(g, S.mu[k]);
+  rebuildOneGroup(k);
+  renderScene();
+  drawOverlay();
+  updatePanels();
+}
+
+/* ------------- pointer interaction ------------- */
+let drag = null;
+overC.addEventListener("pointerdown", e => {
+  if (S.phase !== "bound") return;
+  const rect = overC.getBoundingClientRect();
+  const wx = p2w((e.clientX - rect.left) * overC.width / rect.width);
+  const wy = p2w((e.clientY - rect.top) * overC.width / rect.width);
+  // nearest believed atom within reach
+  let best = -1, bd = 0.12 * 0.12;
+  for (let i = 0; i < S.obs.length; i++) {
+    const g = believedGroup(i);
+    if (g < 0) continue;                    // clutter is not grabbable — nothing believes in it
+    if (S.hidden[g]) continue;              // hidden objects are grabbed via their ghost crosshair
+    const d = (S.obs[i][0] - wx) ** 2 + (S.obs[i][1] - wy) ** 2;
+    if (d < bd) { bd = d; best = i; }
+  }
+  let k = best >= 0 ? believedGroup(best) : -1;
+  // ghost grab: near a hidden object's believed centroid
+  if (k < 0) for (let kk = 0; kk < K; kk++)
+    if (S.hidden[kk] && (S.mu[kk][0] - wx) ** 2 + (S.mu[kk][1] - wy) ** 2 < 0.05 * 0.05) k = kk;
+  if (k < 0) return;
+  drag = { k, lx: wx, ly: wy, moved: false };
+  overC.classList.add("dragging");
+  overC.setPointerCapture(e.pointerId);
+});
+overC.addEventListener("pointermove", e => {
+  if (!drag) return;
+  const rect = overC.getBoundingClientRect();
+  const wx = p2w((e.clientX - rect.left) * overC.width / rect.width);
+  const wy = p2w((e.clientY - rect.top) * overC.width / rect.width);
+  const dx = wx - drag.lx, dy = wy - drag.ly;
+  if (dx || dy) {
+    applyGesture(drag.k, gestureTranslate(dx, dy));
+    drag.lx = wx; drag.ly = wy; drag.moved = true;
+  }
+});
+overC.addEventListener("pointerup", e => {
+  if (!drag) return;
+  overC.classList.remove("dragging");
+  if (drag.moved) resettle(drag.k, S.mu[drag.k]);
+  drag = null;
+});
+overC.addEventListener("wheel", e => {
+  if (S.phase !== "bound") return;
+  const rect = overC.getBoundingClientRect();
+  const wx = p2w((e.clientX - rect.left) * overC.width / rect.width);
+  const wy = p2w((e.clientY - rect.top) * overC.width / rect.width);
+  let k = -1, bd = 0.16 * 0.16;
+  for (let kk = 0; kk < K; kk++) {
+    const d = (S.mu[kk][0] - wx) ** 2 + (S.mu[kk][1] - wy) ** 2;
+    if (d < bd) { bd = d; k = kk; }
+  }
+  if (k < 0) return;
+  e.preventDefault();
+  const c = [S.mu[k][0], S.mu[k][1]];
+  const g = e.shiftKey
+    ? gestureScaleAbout(c, e.deltaY > 0 ? -0.05 : 0.05)
+    : gestureRotateAbout(c, e.deltaY > 0 ? 0.08 : -0.08);
+  applyGesture(k, g);
+  clearTimeout(overC._wt);
+  overC._wt = setTimeout(() => resettle(k, S.mu[k]), 350);
+}, { passive: false });
+
+/* ------------- panels ------------- */
+const ovAtoms = document.getElementById("ov-atoms");
+const ovOwn = document.getElementById("ov-own");
+const ovEnt = document.getElementById("ov-ent");
+const ovPose = document.getElementById("ov-pose");
+for (const el of [ovAtoms, ovOwn, ovEnt, ovPose]) el.addEventListener("change", drawOverlay);
+
+function setPhase(p) {
+  S.phase = p;
+  const lamp = document.getElementById("state-lamp");
+  lamp.className = p === "soup" ? "soup" : p === "binding" ? "binding" : "bound";
+  lamp.textContent = p === "soup" ? "ATOM SOUP" : p === "binding" ? "BELIEFS SETTLING" : "BOUND — GRABBABLE";
+  document.getElementById("btn-bind").disabled = p === "binding";
+}
+
+function buildObjectCards() {
+  const card = document.getElementById("objects-card");
+  for (let k = 0; k < K; k++) {
+    const d = document.createElement("div");
+    d.className = "obj";
+    d.innerHTML = `
+      <div class="name"><span class="swatch" style="background:${OBJ_DEFS[k].color}"></span>
+        ${OBJ_DEFS[k].name} <span class="dim" id="o${k}-n"></span>
+        <span class="spacer"></span>
+        <div class="belief-bar" style="max-width:90px"><div id="o${k}-belief"></div></div>
+      </div>
+      <div class="pose" id="o${k}-pose">pose: unbound</div>
+      <div class="ctl">
+        <button data-k="${k}" data-op="rotl" title="rotate left">&#8634; 15&deg;</button>
+        <button data-k="${k}" data-op="rotr" title="rotate right">&#8635; 15&deg;</button>
+        <button data-k="${k}" data-op="grow">+size</button>
+        <button data-k="${k}" data-op="shrink">&minus;size</button>
+        <button data-k="${k}" data-op="hide" id="o${k}-hide">occlude</button>
+      </div>`;
+    card.appendChild(d);
+  }
+  card.addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b || S.phase !== "bound") return;
+    const k = +b.dataset.k, op = b.dataset.op;
+    const c = [S.mu[k][0], S.mu[k][1]];
+    if (op === "rotl") { applyGesture(k, gestureRotateAbout(c, -Math.PI / 12)); resettle(k, S.mu[k]); }
+    if (op === "rotr") { applyGesture(k, gestureRotateAbout(c, Math.PI / 12)); resettle(k, S.mu[k]); }
+    if (op === "grow") { applyGesture(k, gestureScaleAbout(c, 0.12)); resettle(k, S.mu[k]); }
+    if (op === "shrink") { applyGesture(k, gestureScaleAbout(c, -0.12)); resettle(k, S.mu[k]); }
+    if (op === "hide") toggleHide(k);
+  });
+}
+
+function toggleHide(k) {
+  S.hidden[k] = !S.hidden[k];
+  document.getElementById(`o${k}-hide`).textContent = S.hidden[k] ? "reveal" : "occlude";
+  if (S.hidden[k]) {
+    S.coastT[k] = 1;
+    if (!S._coast) S._coast = setInterval(() => {
+      let any = false;
+      for (let kk = 0; kk < K; kk++) if (S.hidden[kk]) { S.coastT[kk]++; any = true; }
+      if (!any) { clearInterval(S._coast); S._coast = null; }
+      drawOverlay(); updatePanels();
+    }, 400);
+    // hidden atoms lose their evidence: refresh marginals with mask
+    const { res } = runBind({ iters: 12, clampPose: S.mu.map((m, kk) => kk === k ? m.slice() : null) });
+    S.marg = res.marg;                                  // pose belief keeps coasting from mu
+    updateAssign();
+  } else {
+    S.coastT[k] = 0;
+    const { res } = runBind({ iters: 20 });
+    S.marg = res.marg; S.mu = res.mu; S.Sig = res.Sig;
+    updateAssign();
+  }
+  rebuildGroupBuffers(); renderScene(); refreshOwnership(); drawOverlay(); updatePanels();
+}
+
+function updatePanels() {
+  document.getElementById("m-n").textContent = S.obs.length;
+  if (!S.marg) {
+    document.getElementById("m-acc").textContent = "—";
+    document.getElementById("m-ent").textContent = "—";
+    for (let k = 0; k < K; k++) {
+      document.getElementById(`o${k}-pose`).textContent = "pose: unbound";
+      document.getElementById(`o${k}-belief`).style.width = "0%";
+      document.getElementById(`o${k}-n`).textContent = "";
+    }
+    return;
+  }
+  let correct = 0;
+  for (let i = 0; i < S.gt.length; i++) if (believedGroup(i) === S.gt[i]) correct++;
+  document.getElementById("m-acc").textContent = (100 * correct / S.gt.length).toFixed(1) + "%";
+  const ent = atomEntropy(S.marg);
+  document.getElementById("m-ent").textContent =
+    (ent.reduce((a, x) => a + x, 0) / ent.length).toFixed(2) + " bits";
+  for (let k = 0; k < K; k++) {
+    const idx = groupAtomIdx(k);
+    const conf = idx.length ? idx.reduce((a, i) => a + S.marg[i][k], 0) / idx.length : 0;
+    document.getElementById(`o${k}-belief`).style.width = (100 * conf) + "%";
+    document.getElementById(`o${k}-n`).textContent = idx.length + " atoms";
+    const m = S.mu[k];
+    document.getElementById(`o${k}-pose`).textContent =
+      `t=(${m[0].toFixed(2)}, ${m[1].toFixed(2)})  \u03c1=${(m[2] * 180 / Math.PI).toFixed(0)}\u00b0  s=${Math.exp(m[3]).toFixed(2)}` +
+      (S.hidden[k] ? `  \u00b7 coasting ${S.coastT[k]} ticks` : "");
+  }
+}
+
+/* ------------- prompt: local grammar + Claude when available ------------- */
+const promptLog = document.getElementById("prompt-log");
+function localParse(text) {
+  const t = text.toLowerCase();
+  const ops = [];
+  const objIdx = name => OBJ_DEFS.findIndex(o => name.includes(o.name));
+  // split on "and" / "," / ";"
+  for (const part of t.split(/,|;| and /)) {
+    let k = -1;
+    for (let kk = 0; kk < K; kk++) if (part.includes(OBJ_DEFS[kk].name)) k = kk;
+    if (k < 0) continue;
+    if (/hide|occlude|behind/.test(part)) { ops.push({ op: "hide", k }); continue; }
+    if (/show|reveal|unhide/.test(part)) { ops.push({ op: "show", k }); continue; }
+    const deg = part.match(/(-?\d+)\s*(deg|°)?/);
+    if (/rotate|turn|spin/.test(part))
+      ops.push({ op: "rotate", k, deg: deg ? +deg[1] : 30 * (/left|counter|ccw/.test(part) ? -1 : 1) });
+    if (/scale|grow|bigger|larger|shrink|smaller/.test(part))
+      ops.push({ op: "scale", k, ds: /shrink|smaller/.test(part) ? -0.15 : 0.15 });
+    if (/move|push|slide|put|drag/.test(part)) {
+      let dx = 0, dy = 0; const step = 0.22;
+      if (/left/.test(part)) dx -= step;
+      if (/right/.test(part)) dx += step;
+      if (/up|top/.test(part)) dy -= step;
+      if (/down|bottom/.test(part)) dy += step;
+      if (/center|middle/.test(part)) ops.push({ op: "moveto", k, x: 0, y: 0 });
+      else if (dx || dy) ops.push({ op: "move", k, dx, dy });
+    }
+    if (/swap|front|back|depth/.test(part)) ops.push({ op: "none", k });
+  }
+  return ops;
+}
+async function claudeParse(text) {
+  const sceneDesc = OBJ_DEFS.map((o, k) =>
+    `${o.name}: t=(${S.mu[k][0].toFixed(2)},${S.mu[k][1].toFixed(2)}) rho=${S.mu[k][2].toFixed(2)}rad scale=${Math.exp(S.mu[k][3]).toFixed(2)} hidden=${S.hidden[k]}`).join("; ");
+  const resp = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-6", max_tokens: 1000,
+      messages: [{ role: "user", content:
+`You control a probabilistic scene editor. Canvas coordinates: x,y in [-1,1], y grows DOWNWARD, x grows rightward. Objects: ${sceneDesc}.
+User command: "${text}"
+Respond ONLY with a JSON array (no prose, no markdown fences) of operations from:
+{"op":"move","object":"tractor|star","dx":n,"dy":n}
+{"op":"moveto","object":...,"x":n,"y":n}
+{"op":"rotate","object":...,"deg":n}
+{"op":"scale","object":...,"factor":n}   // multiplicative, e.g. 0.7 = shrink
+{"op":"hide","object":...} {"op":"show","object":...}` }],
+    }),
+  });
+  const data = await resp.json();
+  const txt = data.content.filter(c => c.type === "text").map(c => c.text).join("");
+  const arr = JSON.parse(txt.replace(/```json|```/g, "").trim());
+  return arr.map(o => {
+    const k = OBJ_DEFS.findIndex(d => d.name === o.object);
+    if (k < 0) return null;
+    if (o.op === "move") return { op: "move", k, dx: o.dx, dy: o.dy };
+    if (o.op === "moveto") return { op: "moveto", k, x: o.x, y: o.y };
+    if (o.op === "rotate") return { op: "rotate", k, deg: o.deg };
+    if (o.op === "scale") return { op: "scale", k, ds: Math.log(o.factor) };
+    if (o.op === "hide") return { op: "hide", k };
+    if (o.op === "show") return { op: "show", k };
+    return null;
+  }).filter(Boolean);
+}
+function execOps(ops) {
+  if (!ops.length) { promptLog.textContent = "Parsed no intervention. Objects: tractor, star. Verbs: move / rotate / scale / hide / show."; return; }
+  const touched = new Set();
+  for (const o of ops) {
+    const c = [S.mu[o.k][0], S.mu[o.k][1]];
+    if (o.op === "move") { applyGesture(o.k, gestureTranslate(o.dx, o.dy)); touched.add(o.k); }
+    if (o.op === "moveto") { applyGesture(o.k, gestureTranslate(o.x - c[0], o.y - c[1])); touched.add(o.k); }
+    if (o.op === "rotate") { applyGesture(o.k, gestureRotateAbout(c, o.deg * Math.PI / 180)); touched.add(o.k); }
+    if (o.op === "scale") { applyGesture(o.k, gestureScaleAbout(c, o.ds)); touched.add(o.k); }
+    if (o.op === "hide" && !S.hidden[o.k]) toggleHide(o.k);
+    if (o.op === "show" && S.hidden[o.k]) toggleHide(o.k);
+  }
+  for (const k of touched) resettle(k, S.mu[k]);
+  promptLog.textContent = "Clamped: " + ops.map(o =>
+    `${o.op} ${OBJ_DEFS[o.k].name}`).join(", ") + " — beliefs re-settled around the intervention.";
+}
+async function doPrompt() {
+  if (S.phase !== "bound") { promptLog.textContent = "Bind first — there is nothing to address in a soup."; return; }
+  const text = document.getElementById("prompt").value.trim();
+  if (!text) return;
+  let ops = localParse(text);
+  if (!ops.length) {
+    promptLog.textContent = "Local grammar found nothing; asking Claude\u2026";
+    try { ops = await claudeParse(text); }
+    catch { promptLog.textContent = "Claude unavailable outside claude.ai — try: move/rotate/scale/hide + tractor/star."; return; }
+  }
+  execOps(ops);
+}
+document.getElementById("btn-prompt").addEventListener("click", doPrompt);
+document.getElementById("prompt").addEventListener("keydown", e => { if (e.key === "Enter") doPrompt(); });
+
+/* ------------- boot ------------- */
+document.getElementById("btn-scramble").addEventListener("click", scramble);
+document.getElementById("btn-bind").addEventListener("click", () => bind(true));
+buildObjectCards();
+fitStage();
+scramble();
+</script>
+</body>
+</html>
