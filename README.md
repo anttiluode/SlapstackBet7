@@ -1,5 +1,12 @@
 # Slapstack Playroom — Bet 7: objects you can grab
 
+Live at: 
+
+https://anttiluode.github.io/SlapstackBet7/
+
+Press bind again if you cant move the objects. (Tractor and star) 
+Press scramble if things are off. You can move em, rotate em. 
+
 One HTML file. Open `slapstack_playroom.html` in any browser, no install, no
 network. Every entity on the screen is a posterior: **Scramble** throws the
 two real Bet-5 reconstructions (93-atom tractor, 89-atom star) plus clutter
